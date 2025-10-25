@@ -9,21 +9,40 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <!-- DepthAI Dependencies -->
-  <depend>depthai</depend>
-  <depend>depthai_bridge</depend>
-  <depend>depthai_ros_msgs</depend>
+  <!-- Build and run dependencies -->
+  <build_depend>rclcpp</build_depend>
+  <exec_depend>rclcpp</exec_depend>
 
-  <depend>rclcpp</depend>
-  <depend>rclcpp_components</depend>
-  <depend>sensor_msgs</depend>
-  <depend>std_msgs</depend>
-  <depend>image_transport</depend>
-  <depend>cv_bridge</depend>
-  <depend>camera_info_manager</depend>
-  <depend>message_filters</depend>
-  <depend>depthai</depend>
-  <depend>depthai_bridge</depend>
+  <build_depend>rclcpp_components</build_depend>
+  <exec_depend>rclcpp_components</exec_depend>
+
+  <build_depend>sensor_msgs</build_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+
+  <build_depend>std_msgs</build_depend>
+  <exec_depend>std_msgs</exec_depend>
+
+  <build_depend>image_transport</build_depend>
+  <exec_depend>image_transport</exec_depend>
+
+  <build_depend>cv_bridge</build_depend>
+  <exec_depend>cv_bridge</exec_depend>
+
+  <build_depend>camera_info_manager</build_depend>
+  <exec_depend>camera_info_manager</exec_depend>
+
+  <build_depend>message_filters</build_depend>
+  <exec_depend>message_filters</exec_depend>
+
+  <!-- Optional DepthAI related packages (if you have the OAK-D and depthai ROS packages) -->
+  <build_depend>depthai</build_depend>
+  <exec_depend>depthai</exec_depend>
+
+  <build_depend>depthai_bridge</build_depend>
+  <exec_depend>depthai_bridge</exec_depend>
+
+  <build_depend>depthai_ros_msgs</build_depend>
+  <exec_depend>depthai_ros_msgs</exec_depend>
 
   <export>
     <build_type>ament_cmake</build_type>
