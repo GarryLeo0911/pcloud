@@ -17,12 +17,16 @@ int main(int argc, char ** argv)
     rclcpp::init(argc, argv);
     auto node = rclcpp::Node::make_shared("stereo_rectified_rgb_node");
 
-    std::string deviceName;
-    std::string camera_param_uri;
-    if (!node->get_parameter("camera_name", deviceName) || !node->get_parameter("camera_param_uri", camera_param_uri)) {
-        RCLCPP_ERROR(node->get_logger(), "Missing required parameters: camera_name or camera_param_uri");
-        return 1;
-    }
+    // Declare parameters with defaults
+    node->declare_parameter("camera_name", "OAK-D");
+    node->declare_parameter("camera_param_uri", "file://${ROS_HOME}/camera_info/${camera_name}.yaml");
+    
+    // Get parameters
+    std::string deviceName = node->get_parameter("camera_name").as_string();
+    std::string camera_param_uri = node->get_parameter("camera_param_uri").as_string();
+    
+    RCLCPP_INFO(node->get_logger(), "Starting with camera_name: %s", deviceName.c_str());
+    RCLCPP_INFO(node->get_logger(), "Camera params URI: %s", camera_param_uri.c_str());
 
     StereoExampe stero_pipeline;
     stero_pipeline.initDepthaiDev();
