@@ -3,8 +3,8 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <image_transport/image_transport.hpp>
-#include <cv_bridge/cv_bridge.h>
 #include <opencv2/imgproc.hpp>
+#include <cstring>
 
 class MedianFilterNode : public rclcpp::Node {
 public:
@@ -47,38 +47,52 @@ private:
   }
 
   void image_cb(const sensor_msgs::msg::Image::ConstSharedPtr &msg) {
-    cv_bridge::CvImageConstPtr cv_ptr;
-    try {
-      // Try common encodings; prefer mono8, fallback to bgr8
-      if (msg->encoding == "mono8") {
-        cv_ptr = cv_bridge::toCvShare(msg, "mono8");
-      } else if (msg->encoding == "bgr8" || msg->encoding == "rgb8") {
-        cv_ptr = cv_bridge::toCvShare(msg, "bgr8");
-      } else {
-        // Best effort: convert to mono8
-        auto tmp = cv_bridge::toCvShare(msg, msg->encoding);
-        cv::Mat gray;
-        if (tmp->image.channels() == 3) {
-          cv::cvtColor(tmp->image, gray, cv::COLOR_BGR2GRAY);
-        } else if (tmp->image.channels() == 1) {
-          gray = tmp->image;
-        } else {
-          RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 5000, "Unsupported encoding '%s'", msg->encoding.c_str());
-          return;
-        }
-        cv_ptr = cv_bridge::CvImage(msg->header, "mono8", gray).toCvShare();
-      }
-    } catch (const std::exception &e) {
-      RCLCPP_WARN(get_logger(), "cv_bridge conversion failed: %s", e.what());
+    const auto &enc = msg->encoding;
+
+    int cv_type = 0;
+    bool needs_bgr_to_rgb = false;
+    if (enc == "mono8") {
+      cv_type = CV_8UC1;
+    } else if (enc == "bgr8") {
+      cv_type = CV_8UC3;
+    } else if (enc == "rgb8") {
+      cv_type = CV_8UC3;
+      needs_bgr_to_rgb = true; // we'll convert to BGR for processing and back to RGB for output
+    } else {
+      RCLCPP_WARN_THROTTLE(get_logger(), *get_clock(), 5000, "Unsupported encoding '%s'", enc.c_str());
       return;
     }
 
-    cv::Mat out = cv_ptr->image.clone();
-    for (int i = 0; i < iterations_; ++i) {
-      cv::medianBlur(out, out, kernel_size_);
+    // Wrap input data (do not modify in place)
+    cv::Mat input(static_cast<int>(msg->height), static_cast<int>(msg->width), cv_type,
+                  const_cast<unsigned char *>(msg->data.data()), static_cast<size_t>(msg->step));
+    cv::Mat work = input.clone();
+
+    // Convert RGB->BGR if needed for OpenCV default
+    if (needs_bgr_to_rgb) {
+      cv::cvtColor(work, work, cv::COLOR_RGB2BGR);
     }
 
-    auto out_msg = cv_bridge::CvImage(msg->header, cv_ptr->encoding, out).toImageMsg();
+    // Apply median filter
+    for (int i = 0; i < iterations_; ++i) {
+      cv::medianBlur(work, work, kernel_size_);
+    }
+
+    // Convert back to RGB if needed
+    if (needs_bgr_to_rgb) {
+      cv::cvtColor(work, work, cv::COLOR_BGR2RGB);
+    }
+
+    // Build output message
+    auto out_msg = std::make_shared<sensor_msgs::msg::Image>();
+    out_msg->header = msg->header;
+    out_msg->height = static_cast<uint32_t>(work.rows);
+    out_msg->width = static_cast<uint32_t>(work.cols);
+    out_msg->encoding = enc;
+    out_msg->is_bigendian = false;
+    out_msg->step = static_cast<sensor_msgs::msg::Image::_step_type>(work.step);
+    out_msg->data.resize(work.total() * work.elemSize());
+    std::memcpy(out_msg->data.data(), work.data, out_msg->data.size());
     pub_.publish(out_msg);
   }
 
@@ -99,4 +113,3 @@ int main(int argc, char **argv) {
   rclcpp::shutdown();
   return 0;
 }
-

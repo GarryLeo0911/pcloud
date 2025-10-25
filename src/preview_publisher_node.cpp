@@ -3,7 +3,6 @@
 #include <rclcpp/rclcpp.hpp>
 #include <sensor_msgs/msg/image.hpp>
 #include <image_transport/image_transport.hpp>
-#include <cv_bridge/cv_bridge.h>
 
 #include <opencv2/opencv.hpp>
 
@@ -45,9 +44,16 @@ private:
     cv::Mat cv_frame = frame->getCvFrame();
     if (cv_frame.empty()) return;
 
-    auto msg = cv_bridge::CvImage(std_msgs::msg::Header{}, "bgr8", cv_frame).toImageMsg();
+    auto msg = std::make_shared<sensor_msgs::msg::Image>();
     msg->header.stamp = this->now();
     msg->header.frame_id = this->get_parameter("frame_id").as_string();
+    msg->height = static_cast<uint32_t>(cv_frame.rows);
+    msg->width = static_cast<uint32_t>(cv_frame.cols);
+    msg->encoding = "bgr8";
+    msg->is_bigendian = false;
+    msg->step = static_cast<sensor_msgs::msg::Image::_step_type>(cv_frame.step);
+    msg->data.resize(cv_frame.total() * cv_frame.elemSize());
+    std::memcpy(msg->data.data(), cv_frame.data, msg->data.size());
     image_pub_.publish(msg);
   }
 

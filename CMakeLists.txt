@@ -9,7 +9,6 @@ find_package(rclcpp REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(image_transport REQUIRED)
-find_package(cv_bridge REQUIRED)
 find_package(vision_msgs REQUIRED)
 find_package(camera_info_manager REQUIRED)
 find_package(message_filters REQUIRED)
@@ -28,12 +27,8 @@ add_executable(preview_publisher_node
 
 target_include_directories(preview_publisher_node PRIVATE include)
 ament_target_dependencies(preview_publisher_node
-  rclcpp sensor_msgs std_msgs image_transport cv_bridge
+  rclcpp sensor_msgs std_msgs image_transport
 )
-# Be explicit if cv_bridge exports a CMake target
-if (TARGET cv_bridge::cv_bridge)
-  target_link_libraries(preview_publisher_node cv_bridge::cv_bridge)
-endif()
 target_link_libraries(preview_publisher_node
   depthai::core
   ${OpenCV_LIBRARIES}
@@ -44,12 +39,8 @@ add_executable(median_filter_node
 )
 
 ament_target_dependencies(median_filter_node
-  rclcpp sensor_msgs image_transport cv_bridge
+  rclcpp sensor_msgs image_transport
 )
-# Be explicit if cv_bridge exports a CMake target
-if (TARGET cv_bridge::cv_bridge)
-  target_link_libraries(median_filter_node cv_bridge::cv_bridge)
-endif()
 target_link_libraries(median_filter_node
   ${OpenCV_LIBRARIES}
 )
