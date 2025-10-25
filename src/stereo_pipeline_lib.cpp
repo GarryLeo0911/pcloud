@@ -1,4 +1,6 @@
 #include <oakd_pcloud/stereo_pipeline.hpp>
+#include <memory>
+#include <vector>
 
 #ifdef OAKD_USE_DEPTHAI
 

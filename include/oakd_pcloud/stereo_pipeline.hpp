@@ -2,6 +2,8 @@
 #pragma once
 
 #include <iostream> // do I need this ?
+#include <vector>
+#include <memory>
 // Include DepthAI header only if both the build flag is set and the header is available.
 #if defined(OAKD_USE_DEPTHAI) && __has_include(<depthai/depthai.hpp>)
 #include <depthai/depthai.hpp>
@@ -28,8 +30,8 @@ class StereoExampe{
 
     private:
     std::vector<std::shared_ptr<dai::DataOutputQueue>> _opImageStreams;
-    std::unique_ptr<dai::Device> _dev;
-    dai::Pipeline _p;
+    std::shared_ptr<dai::Device> _dev;
+    std::shared_ptr<dai::Pipeline> _p;
 
 };
 

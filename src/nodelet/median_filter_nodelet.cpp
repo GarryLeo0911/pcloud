@@ -37,9 +37,9 @@ public:
     this->declare_parameter<int>("kernel_size", kernel_size_);
     this->declare_parameter<int>("blur_iterations", blur_iterations_);
 
-    auto qos = rclcpp::QoS(10);
+  auto qos = rclcpp::QoS(10);
 
-    pub_depth_ = this->create_publisher<sensor_msgs::msg::Image>("median_depth", qos.get_rmw_qos_profile());
+  pub_depth_ = this->create_publisher<sensor_msgs::msg::Image>("median_depth", qos);
 
     // parameter callback
     param_cb_handle_ = this->add_on_set_parameters_callback(
