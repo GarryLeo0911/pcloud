@@ -30,6 +30,10 @@ target_include_directories(preview_publisher_node PRIVATE include)
 ament_target_dependencies(preview_publisher_node
   rclcpp sensor_msgs std_msgs image_transport cv_bridge
 )
+# Be explicit if cv_bridge exports a CMake target
+if (TARGET cv_bridge::cv_bridge)
+  target_link_libraries(preview_publisher_node cv_bridge::cv_bridge)
+endif()
 target_link_libraries(preview_publisher_node
   depthai::core
   ${OpenCV_LIBRARIES}
@@ -42,6 +46,10 @@ add_executable(median_filter_node
 ament_target_dependencies(median_filter_node
   rclcpp sensor_msgs image_transport cv_bridge
 )
+# Be explicit if cv_bridge exports a CMake target
+if (TARGET cv_bridge::cv_bridge)
+  target_link_libraries(median_filter_node cv_bridge::cv_bridge)
+endif()
 target_link_libraries(median_filter_node
   ${OpenCV_LIBRARIES}
 )
@@ -60,4 +68,3 @@ install(DIRECTORY launch
 )
 
 ament_package()
-
