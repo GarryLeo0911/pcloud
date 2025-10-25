@@ -10,9 +10,18 @@ find_package(rclcpp_components REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(image_transport REQUIRED)
-find_package(cv_bridge REQUIRED)
+find_package(cv_bridge QUIET)
 find_package(OpenCV REQUIRED COMPONENTS imgproc highgui)
-find_package(depthai REQUIRED)
+find_package(depthai QUIET)
+
+# Helpful errors for missing system/ROS packages
+if(NOT cv_bridge_FOUND)
+	message(FATAL_ERROR "cv_bridge not found. On Ubuntu with ROS Jazzy install: sudo apt install ros-jazzy-cv-bridge")
+endif()
+
+if(NOT depthai_FOUND)
+	message(FATAL_ERROR "DepthAI SDK not found. If you have the ROS package available install: sudo apt install ros-jazzy-depthai-ros\nOr follow the DepthAI C++ SDK installation instructions from Luxonis to provide depthai/depthai.hpp and libraries.")
+endif()
 find_package(message_filters REQUIRED)
 find_package(camera_info_manager REQUIRED)
 
