@@ -69,6 +69,10 @@ ament_target_dependencies(wls_filter_node rclcpp rclcpp_components sensor_msgs i
 if(cv_bridge_FOUND)
 	ament_target_dependencies(wls_filter_node cv_bridge)
 endif()
+rclcpp_components_register_node(wls_filter_node
+	PLUGIN "oakd_pcloud::WLSFilterNode"
+	EXECUTABLE wls_filter_exec
+)
 
 add_library(median_filter_node SHARED src/nodelet/median_filter_nodelet.cpp)
 target_compile_features(median_filter_node PRIVATE cxx_std_17)
@@ -76,8 +80,13 @@ ament_target_dependencies(median_filter_node rclcpp rclcpp_components sensor_msg
 if(cv_bridge_FOUND)
 	ament_target_dependencies(median_filter_node cv_bridge)
 endif()
+rclcpp_components_register_node(median_filter_node
+	PLUGIN "oakd_pcloud::MedianFilterNode"
+	EXECUTABLE median_filter_exec
+)
 
 add_executable(stereo_rectified_rgb_node src/stereo_rectified_rgb_publisher.cpp)
+target_compile_features(stereo_rectified_rgb_node PRIVATE cxx_std_17)
 ament_target_dependencies(stereo_rectified_rgb_node rclcpp sensor_msgs OpenCV camera_info_manager)
 if(cv_bridge_FOUND)
 	ament_target_dependencies(stereo_rectified_rgb_node cv_bridge)
@@ -89,15 +98,22 @@ endif()
 # Link the package library so implementations in src/stereo_pipeline_lib.cpp are available
 target_link_libraries(stereo_rectified_rgb_node ${PROJECT_NAME}_lib)
 
+# Install targets with proper ROS2 layout
 install(TARGETS
 	${PROJECT_NAME}_lib
 	wls_filter_node
 	median_filter_node
 	stereo_rectified_rgb_node
+	wls_filter_exec
+	median_filter_exec
+	EXPORT export_${PROJECT_NAME}
 	ARCHIVE DESTINATION lib
 	LIBRARY DESTINATION lib
-	RUNTIME DESTINATION bin
+	RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
+
+# Export package for ROS2 index
+ament_export_targets(export_${PROJECT_NAME} HAS_LIBRARY_TARGET)
 
 install(DIRECTORY include/
 	DESTINATION include
