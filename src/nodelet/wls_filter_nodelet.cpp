@@ -12,8 +12,11 @@
 #include <cv_bridge/cv_bridge.h>
 #include <opencv2/opencv.hpp>
 #include <opencv2/ximgproc/disparity_filter.hpp>
-#ifdef OAKD_USE_DEPTHAI
+// Include DepthAI header only if build-time flag set and header is present
+#if defined(OAKD_USE_DEPTHAI) && __has_include(<depthai/depthai.hpp>)
 #include <depthai/depthai.hpp>
+#else
+#define OAKD_NO_DEPTHAI_RUNTIME
 #endif
 
 namespace oakd_pcloud

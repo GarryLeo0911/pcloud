@@ -2,8 +2,9 @@
 #pragma once
 
 #include <iostream> // do I need this ?
-#ifdef OAKD_USE_DEPTHAI
-#include "depthai/depthai.hpp"
+// Include DepthAI header only if both the build flag is set and the header is available.
+#if defined(OAKD_USE_DEPTHAI) && __has_include(<depthai/depthai.hpp>)
+#include <depthai/depthai.hpp>
 #else
 // Provide minimal forward declarations so code can compile when DepthAI is not present
 namespace dai {

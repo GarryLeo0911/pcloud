@@ -4,8 +4,11 @@
 #include <sensor_msgs/msg/image.hpp>
 #include <camera_info_manager/camera_info_manager.hpp>
 #include <oakd_pcloud/stereo_pipeline.hpp>
-#ifdef OAKD_USE_DEPTHAI
+// Include DepthAI header only if build flag set and header exists
+#if defined(OAKD_USE_DEPTHAI) && __has_include(<depthai/depthai.hpp>)
 #include <depthai/depthai.hpp>
+#else
+#define OAKD_NO_DEPTHAI_RUNTIME
 #endif
 #include <memory>
 

@@ -13,8 +13,11 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <rcl_interfaces/msg/set_parameters_result.hpp>
-#ifdef OAKD_USE_DEPTHAI
+// Include DepthAI header only if build-time flag set and header is present
+#if defined(OAKD_USE_DEPTHAI) && __has_include(<depthai/depthai.hpp>)
 #include <depthai/depthai.hpp>
+#else
+#define OAKD_NO_DEPTHAI_RUNTIME
 #endif
 
 namespace oakd_pcloud
