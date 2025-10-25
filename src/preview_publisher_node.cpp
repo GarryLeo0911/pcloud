@@ -40,21 +40,20 @@ private:
     auto frame = preview_queue_->tryGet<dai::ImgFrame>();
     if (!frame) return;
 
-    // get cv::Mat from depthai frame
-    cv::Mat cv_frame = frame->getCvFrame();
-    if (cv_frame.empty()) return;
-
-    auto msg = std::make_shared<sensor_msgs::msg::Image>();
-    msg->header.stamp = this->now();
-    msg->header.frame_id = this->get_parameter("frame_id").as_string();
-    msg->height = static_cast<uint32_t>(cv_frame.rows);
-    msg->width = static_cast<uint32_t>(cv_frame.cols);
-    msg->encoding = "bgr8";
-    msg->is_bigendian = false;
-    msg->step = static_cast<sensor_msgs::msg::Image::_step_type>(cv_frame.step);
-    msg->data.resize(cv_frame.total() * cv_frame.elemSize());
-    std::memcpy(msg->data.data(), cv_frame.data, msg->data.size());
-    image_pub_.publish(msg);
+  // Build sensor_msgs::Image directly from DepthAI frame without OpenCV helper
+  auto msg = std::make_shared<sensor_msgs::msg::Image>();
+  msg->header.stamp = this->now();
+  msg->header.frame_id = this->get_parameter("frame_id").as_string();
+  const auto width  = static_cast<uint32_t>(frame->getWidth());
+  const auto height = static_cast<uint32_t>(frame->getHeight());
+  msg->width = width;
+  msg->height = height;
+  msg->encoding = "bgr8"; // ensured by pipeline: interleaved + BGR color order
+  msg->is_bigendian = false;
+  msg->step = static_cast<sensor_msgs::msg::Image::_step_type>(width * 3);
+  const auto &data = frame->getData();
+  msg->data.assign(data.begin(), data.end());
+  image_pub_.publish(msg);
   }
 
   image_transport::ImageTransport it_;
