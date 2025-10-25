@@ -2,7 +2,7 @@
 #include <memory>
 #include <vector>
 
-#ifdef OAKD_USE_DEPTHAI
+#if defined(OAKD_USE_DEPTHAI) && __has_include(<depthai/depthai.hpp>)
 
 void StereoExampe::initDepthaiDev(){
     bool withDepth = true;
@@ -12,14 +12,17 @@ void StereoExampe::initDepthaiDev(){
     bool extended = false;
     bool subpixel = false;
 
-    auto monoLeft    = _p.create<dai::node::MonoCamera>();
-    auto monoRight   = _p.create<dai::node::MonoCamera>();
-    auto xoutLeft    = _p.create<dai::node::XLinkOut>();
-    auto xoutRight   = _p.create<dai::node::XLinkOut>();
-    auto stereo      = withDepth ? _p.create<dai::node::StereoDepth>() : nullptr;
-    auto xoutDepth   = _p.create<dai::node::XLinkOut>();
-    auto xoutRectifL = _p.create<dai::node::XLinkOut>();
-    auto xoutRectifR = _p.create<dai::node::XLinkOut>();
+    // create Pipeline instance
+    _p = std::make_shared<dai::Pipeline>();
+
+    auto monoLeft    = _p->create<dai::node::MonoCamera>();
+    auto monoRight   = _p->create<dai::node::MonoCamera>();
+    auto xoutLeft    = _p->create<dai::node::XLinkOut>();
+    auto xoutRight   = _p->create<dai::node::XLinkOut>();
+    auto stereo      = withDepth ? _p->create<dai::node::StereoDepth>() : nullptr;
+    auto xoutDepth   = _p->create<dai::node::XLinkOut>();
+    auto xoutRectifL = _p->create<dai::node::XLinkOut>();
+    auto xoutRectifR = _p->create<dai::node::XLinkOut>();
 
     xoutLeft->setStreamName("left");
     xoutRight->setStreamName("right");
@@ -58,15 +61,15 @@ void StereoExampe::initDepthaiDev(){
     }
     stereo->depth.link(xoutDepth->input);
 
-    auto colorCam = _p.create<dai::node::ColorCamera>();
-    auto xlinkOut = _p.create<dai::node::XLinkOut>();
+    auto colorCam = _p->create<dai::node::ColorCamera>();
+    auto xlinkOut = _p->create<dai::node::XLinkOut>();
     xlinkOut->setStreamName("preview");
     colorCam->setPreviewSize(1280, 720);
     colorCam->setResolution(dai::ColorCameraProperties::SensorResolution::THE_1080_P);
     colorCam->setInterleaved(true);
     colorCam->preview.link(xlinkOut->input);
 
-    _dev = std::make_unique<dai::Device>(_p);
+    _dev = std::make_shared<dai::Device>(*_p);
     _dev->startPipeline();
 
     _opImageStreams.push_back(_dev->getOutputQueue("left", 30, false));
