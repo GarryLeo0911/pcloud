@@ -2,7 +2,18 @@
 #pragma once
 
 #include <iostream> // do I need this ?
+#ifdef OAKD_USE_DEPTHAI
 #include "depthai/depthai.hpp"
+#else
+// Provide minimal forward declarations so code can compile when DepthAI is not present
+namespace dai {
+    class Device;
+    class Pipeline;
+    class DataOutputQueue;
+    namespace node { class MonoCamera; class XLinkOut; class StereoDepth; class ColorCamera; }
+    class ImgFrame;
+}
+#endif
 
 
 class StereoExampe{

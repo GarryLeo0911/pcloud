@@ -14,14 +14,22 @@ find_package(cv_bridge QUIET)
 find_package(OpenCV REQUIRED COMPONENTS imgproc highgui)
 find_package(depthai QUIET)
 
-# Helpful errors for missing system/ROS packages
-if(NOT cv_bridge_FOUND)
-	message(FATAL_ERROR "cv_bridge not found. On Ubuntu with ROS Jazzy install: sudo apt install ros-jazzy-cv-bridge")
+# Option to build without DepthAI (useful for CI or machines without the device)
+option(BUILD_WITHOUT_DEPTHAI "Build package without DepthAI support" OFF)
+
+# Global compile-time flags to let sources know whether DepthAI or cv_bridge are available
+if(depthai_FOUND AND NOT BUILD_WITHOUT_DEPTHAI)
+	add_compile_definitions(OAKD_USE_DEPTHAI)
+else()
+	add_compile_definitions(OAKD_NO_DEPTHAI)
 endif()
 
-if(NOT depthai_FOUND)
-	message(FATAL_ERROR "DepthAI SDK not found. If you have the ROS package available install: sudo apt install ros-jazzy-depthai-ros\nOr follow the DepthAI C++ SDK installation instructions from Luxonis to provide depthai/depthai.hpp and libraries.")
+if(cv_bridge_FOUND)
+	add_compile_definitions(OAKD_USE_CVBRIDGE)
+else()
+	add_compile_definitions(OAKD_NO_CVBRIDGE)
 endif()
+
 find_package(message_filters REQUIRED)
 find_package(camera_info_manager REQUIRED)
 
@@ -36,28 +44,47 @@ add_library(${PROJECT_NAME}_lib SHARED
 
 target_include_directories(${PROJECT_NAME}_lib PRIVATE include)
 
-ament_target_dependencies(${PROJECT_NAME}_lib
-	rclcpp
-	sensor_msgs
-	std_msgs
-	image_transport
-	cv_bridge
-	OpenCV
-	depthai
-	message_filters
-	camera_info_manager
+# Build dependency list conditionally
+set(OAKD_COMMON_DEPS
+		rclcpp
+		sensor_msgs
+		std_msgs
+		image_transport
+		OpenCV
+		message_filters
+		camera_info_manager
 )
+if(cv_bridge_FOUND)
+	list(APPEND OAKD_COMMON_DEPS cv_bridge)
+endif()
+if(depthai_FOUND AND NOT BUILD_WITHOUT_DEPTHAI)
+	list(APPEND OAKD_COMMON_DEPS depthai)
+endif()
+
+ament_target_dependencies(${PROJECT_NAME}_lib ${OAKD_COMMON_DEPS})
 
 add_library(wls_filter_node SHARED src/nodelet/wls_filter_nodelet.cpp)
 target_compile_features(wls_filter_node PRIVATE cxx_std_17)
-ament_target_dependencies(wls_filter_node rclcpp rclcpp_components sensor_msgs cv_bridge image_transport OpenCV message_filters)
+ament_target_dependencies(wls_filter_node rclcpp rclcpp_components sensor_msgs image_transport OpenCV message_filters)
+if(cv_bridge_FOUND)
+	ament_target_dependencies(wls_filter_node cv_bridge)
+endif()
 
 add_library(median_filter_node SHARED src/nodelet/median_filter_nodelet.cpp)
 target_compile_features(median_filter_node PRIVATE cxx_std_17)
-ament_target_dependencies(median_filter_node rclcpp rclcpp_components sensor_msgs cv_bridge image_transport OpenCV message_filters)
+ament_target_dependencies(median_filter_node rclcpp rclcpp_components sensor_msgs image_transport OpenCV message_filters)
+if(cv_bridge_FOUND)
+	ament_target_dependencies(median_filter_node cv_bridge)
+endif()
 
 add_executable(stereo_rectified_rgb_node src/stereo_rectified_rgb_publisher.cpp)
-ament_target_dependencies(stereo_rectified_rgb_node rclcpp sensor_msgs cv_bridge OpenCV depthai camera_info_manager)
+ament_target_dependencies(stereo_rectified_rgb_node rclcpp sensor_msgs OpenCV camera_info_manager)
+if(cv_bridge_FOUND)
+	ament_target_dependencies(stereo_rectified_rgb_node cv_bridge)
+endif()
+if(depthai_FOUND AND NOT BUILD_WITHOUT_DEPTHAI)
+	ament_target_dependencies(stereo_rectified_rgb_node depthai)
+endif()
 
 install(TARGETS
 	${PROJECT_NAME}_lib

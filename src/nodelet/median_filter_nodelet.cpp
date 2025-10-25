@@ -13,7 +13,9 @@
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <rcl_interfaces/msg/set_parameters_result.hpp>
+#ifdef OAKD_USE_DEPTHAI
 #include <depthai/depthai.hpp>
+#endif
 
 namespace oakd_pcloud
 {

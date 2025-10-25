@@ -4,7 +4,9 @@
 #include <sensor_msgs/msg/image.hpp>
 #include <camera_info_manager/camera_info_manager.hpp>
 #include <oakd_pcloud/stereo_pipeline.hpp>
+#ifdef OAKD_USE_DEPTHAI
 #include <depthai/depthai.hpp>
+#endif
 #include <memory>
 
 int main(int argc, char ** argv)
@@ -21,9 +23,13 @@ int main(int argc, char ** argv)
 
     StereoExampe stero_pipeline;
     stero_pipeline.initDepthaiDev();
+#ifdef OAKD_USE_DEPTHAI
     std::vector<std::shared_ptr<dai::DataOutputQueue>> imageDataQueues = stero_pipeline.getExposedImageStreams();
-
     RCLCPP_INFO(node->get_logger(), "Data queue sizes: %zu", imageDataQueues.size());
+#else
+    std::vector<std::shared_ptr<void>> imageDataQueues; (void)imageDataQueues;
+    RCLCPP_WARN(node->get_logger(), "DepthAI not available: running in limited mode (no camera input). Set BUILD_WITHOUT_DEPTHAI=OFF and install ros-jazzy-depthai-ros to enable full functionality.");
+#endif
 
     // NOTE: The original used depthai_bridge bridge publishers. If a ROS2 depthai_bridge is
     // available with the same API, adapt here. For now we create basic publishers as placeholders.
@@ -35,6 +41,7 @@ int main(int argc, char ** argv)
 
     // A minimal publishing thread for preview/color stream. In a full port we would
     // use depthai_bridge or its ROS2 equivalent to convert dai::ImgFrame to ROS messages.
+#ifdef OAKD_USE_DEPTHAI
     std::thread pub_thread([node, &imageDataQueues, depth_pub, left_rect_pub, right_rect_pub, rgb_pub]() {
         rclcpp::Rate rate(30);
         while (rclcpp::ok()) {
@@ -58,6 +65,10 @@ int main(int argc, char ** argv)
             rate.sleep();
         }
     });
+#else
+    // No-op thread when DepthAI is not available
+    std::thread pub_thread;
+#endif
 
     rclcpp::spin(node);
     rclcpp::shutdown();
