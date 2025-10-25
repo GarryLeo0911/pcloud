@@ -1,113 +1,67 @@
 
-#include "ros/ros.h"
-
-#include <iostream>
-#include <cstdio>
-// #include "utility.hpp"
-#include "sensor_msgs/Image.h"
-#include <camera_info_manager/camera_info_manager.h>
+// ROS2 port of the stereo rectified RGB publisher node
+#include <rclcpp/rclcpp.hpp>
+#include <sensor_msgs/msg/image.hpp>
+#include <camera_info_manager/camera_info_manager.hpp>
 #include <oakd_pcloud/stereo_pipeline.hpp>
-#include <functional>
+#include <depthai/depthai.hpp>
+#include <memory>
 
-// #include <depthai_examples/daiUtility.hpp>
-// Inludes common necessary includes for development using depthai library
-#include "depthai/depthai.hpp"
+int main(int argc, char ** argv)
+{
+    rclcpp::init(argc, argv);
+    auto node = rclcpp::Node::make_shared("stereo_rectified_rgb_node");
 
-#include <depthai_bridge/BridgePublisher.hpp>
-#include <depthai_bridge/ImageConverter.hpp>
-
-// using namespace std::placeholders;
-int main(int argc, char** argv){
-
-    ros::init(argc, argv, "stereo_rectified_rgb_node");
-    ros::NodeHandle pnh("~");
-    
     std::string deviceName;
     std::string camera_param_uri;
-    int bad_params = 0;
-
-    bad_params += !pnh.getParam("camera_name", deviceName);
-    bad_params += !pnh.getParam("camera_param_uri", camera_param_uri);
-
-    if (bad_params > 0)
-    {
-        throw std::runtime_error("Couldn't find one of the parameters");
+    if (!node->get_parameter("camera_name", deviceName) || !node->get_parameter("camera_param_uri", camera_param_uri)) {
+        RCLCPP_ERROR(node->get_logger(), "Missing required parameters: camera_name or camera_param_uri");
+        return 1;
     }
 
     StereoExampe stero_pipeline;
     stero_pipeline.initDepthaiDev();
     std::vector<std::shared_ptr<dai::DataOutputQueue>> imageDataQueues = stero_pipeline.getExposedImageStreams();
 
-    ROS_INFO_STREAM("Data queque sizes:" << imageDataQueues.size());
-    
-    // this part would be removed once we have calibration-api
-    std::string left_uri = camera_param_uri + "/" + "left.yaml";
-    std::string right_uri = camera_param_uri + "/" + "right.yaml";
-    std::string rectified_left_uri = camera_param_uri + "/" + "rectified_left.yaml";
-    std::string rectified_right_uri = camera_param_uri + "/" + "rectified_right.yaml";
-    std::string stereo_uri = camera_param_uri + "/" + "right.yaml";
-    std::string color_uri = camera_param_uri + "/" + "color.yaml";
+    RCLCPP_INFO(node->get_logger(), "Data queue sizes: %zu", imageDataQueues.size());
 
-    dai::rosBridge::ImageConverter depthConverter(deviceName + "_right_camera_optical_frame", true);
-    dai::rosBridge::BridgePublisher<sensor_msgs::Image, dai::ImgFrame> depthPublish(imageDataQueues[2],
-                                                                                     pnh, 
-                                                                                     std::string("stereo/depth"),
-                                                                                     std::bind(&dai::rosBridge::ImageConverter::toRosMsg, 
-                                                                                     &depthConverter, // since the converter has the same frame name
-                                                                                                      // and image type is also same we can reuse it
-                                                                                     std::placeholders::_1, 
-                                                                                     std::placeholders::_2) , 
-                                                                                     30,
-                                                                                     stereo_uri,
-                                                                                     "stereo");
+    // NOTE: The original used depthai_bridge bridge publishers. If a ROS2 depthai_bridge is
+    // available with the same API, adapt here. For now we create basic publishers as placeholders.
 
-    depthPublish.addPubisherCallback();
+    auto depth_pub = node->create_publisher<sensor_msgs::msg::Image>("stereo/depth", 10);
+    auto left_rect_pub = node->create_publisher<sensor_msgs::msg::Image>("rectified_left/image", 10);
+    auto right_rect_pub = node->create_publisher<sensor_msgs::msg::Image>("rectified_right/image", 10);
+    auto rgb_pub = node->create_publisher<sensor_msgs::msg::Image>("color/image", 10);
 
-    dai::rosBridge::ImageConverter leftRectifiedconverter(deviceName + "_left_camera_optical_frame", true);
-    dai::rosBridge::BridgePublisher<sensor_msgs::Image, dai::ImgFrame> leftRectifiedPublish(imageDataQueues[3],
-                                                                                     pnh, 
-                                                                                     std::string("rectified_left/image"),
-                                                                                     std::bind(&dai::rosBridge::ImageConverter::toRosMsg, 
-                                                                                     &leftRectifiedconverter, 
-                                                                                     std::placeholders::_1, 
-                                                                                     std::placeholders::_2) , 
-                                                                                     30,
-                                                                                     left_uri,
-                                                                                     "rectified_left");
+    // A minimal publishing thread for preview/color stream. In a full port we would
+    // use depthai_bridge or its ROS2 equivalent to convert dai::ImgFrame to ROS messages.
+    std::thread pub_thread([node, &imageDataQueues, depth_pub, left_rect_pub, right_rect_pub, rgb_pub]() {
+        rclcpp::Rate rate(30);
+        while (rclcpp::ok()) {
+            // attempt to get preview frame (index 5) as an example
+            if (imageDataQueues.size() > 5 && imageDataQueues[5]) {
+                auto opt = imageDataQueues[5]->tryGet<dai::ImgFrame>(std::chrono::milliseconds(10));
+                if (opt) {
+                    // convert to sensor_msgs::msg::Image minimal
+                    sensor_msgs::msg::Image msg;
+                    msg.header.stamp = node->now();
+                    msg.header.frame_id = "color_frame";
+                    msg.height = opt->getHeight();
+                    msg.width = opt->getWidth();
+                    msg.encoding = "rgb8";
+                    msg.step = opt->getWidth() * 3;
+                    auto data = opt->getData();
+                    msg.data.assign(data.begin(), data.end());
+                    rgb_pub->publish(msg);
+                }
+            }
+            rate.sleep();
+        }
+    });
 
-    leftRectifiedPublish.addPubisherCallback();
-
-
-    dai::rosBridge::ImageConverter rightRectifiedconverter(deviceName + "_right_camera_optical_frame", true);
-    dai::rosBridge::BridgePublisher<sensor_msgs::Image, dai::ImgFrame> rightRectifiedPublish(imageDataQueues[4],
-                                                                                     pnh, 
-                                                                                     std::string("rectified_right/image"),
-                                                                                     std::bind(&dai::rosBridge::ImageConverter::toRosMsg, 
-                                                                                     &rightRectifiedconverter, 
-                                                                                     std::placeholders::_1, 
-                                                                                     std::placeholders::_2) , 
-                                                                                     30,
-                                                                                     right_uri,
-                                                                                     "rectified_right");
-
-    rightRectifiedPublish.addPubisherCallback();
-
-    
-    dai::rosBridge::ImageConverter rgbConverter(deviceName + "_rgb_camera_optical_frame", true);
-    dai::rosBridge::BridgePublisher<sensor_msgs::Image, dai::ImgFrame> rgbPublish(imageDataQueues[5],
-                                                                                  pnh, 
-                                                                                  std::string("color/image"),
-                                                                                  std::bind(&dai::rosBridge::ImageConverter::toRosMsg, 
-                                                                                  &rgbConverter, // since the converter has the same frame name
-                                                                                                  // and image type is also same we can reuse it
-                                                                                  std::placeholders::_1, 
-                                                                                  std::placeholders::_2) , 
-                                                                                  30,
-                                                                                  color_uri,
-                                                                                  "color");
-    rgbPublish.startPublisherThread();
-
-    ros::spin();
+    rclcpp::spin(node);
+    rclcpp::shutdown();
+    if (pub_thread.joinable()) pub_thread.join();
     return 0;
 }
 
