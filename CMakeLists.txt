@@ -86,6 +86,9 @@ if(depthai_FOUND AND NOT BUILD_WITHOUT_DEPTHAI)
 	ament_target_dependencies(stereo_rectified_rgb_node depthai)
 endif()
 
+# Link the package library so implementations in src/stereo_pipeline_lib.cpp are available
+target_link_libraries(stereo_rectified_rgb_node ${PROJECT_NAME}_lib)
+
 install(TARGETS
 	${PROJECT_NAME}_lib
 	wls_filter_node
