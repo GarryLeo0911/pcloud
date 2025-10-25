@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>oakd_pcloud</name>
+  <version>0.0.2</version>
+  <description>ROS 2 (Jazzy) port of oakd_pcloud</description>
+
+  <maintainer email="h3ct0r@todo.todo">h3ct0r</maintainer>
+  <license>TODO</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- Core ROS 2 deps -->
+  <depend>rclcpp</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+  <depend>vision_msgs</depend>
+  <depend>image_transport</depend>
+  <depend>cv_bridge</depend>
+  <depend>camera_info_manager</depend>
+  <depend>message_filters</depend>
+
+  <!-- Optional: OpenCV is resolved via CMake find_package -->
+  <!-- <exec_depend>opencv</exec_depend> -->
+
+  <!-- depthai is a CMake package (not a ROS pkg) and is resolved via CMake -->
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+
+</package>
