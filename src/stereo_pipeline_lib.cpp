@@ -33,10 +33,10 @@ void StereoExampe::initDepthaiDev(){
 
     // MonoCamera
     monoLeft->setResolution(dai::MonoCameraProperties::SensorResolution::THE_720_P);
-    monoLeft->setBoardSocket(dai::CameraBoardSocket::LEFT);
+    monoLeft->setBoardSocket(dai::CameraBoardSocket::CAM_B);
     //monoLeft->setFps(5.0);
     monoRight->setResolution(dai::MonoCameraProperties::SensorResolution::THE_720_P);
-    monoRight->setBoardSocket(dai::CameraBoardSocket::RIGHT);
+    monoRight->setBoardSocket(dai::CameraBoardSocket::CAM_C);
     //monoRight->setFps(5.0);
 
     int maxDisp = 96;
@@ -44,9 +44,8 @@ void StereoExampe::initDepthaiDev(){
     if (subpixel) maxDisp *= 32; // 5 bits fractional disparity
 
     // StereoDepth
-    stereo->setOutputDepth(outputDepth);
-    stereo->setOutputRectified(outputRectified);
-    stereo->setConfidenceThreshold(200);
+    // Output depth/rectified are enabled implicitly by linking respective outputs in newer API
+    stereo->initialConfig.setConfidenceThreshold(200);
     stereo->setRectifyEdgeFillColor(0); // black, to better see the cutout
     //stereo->loadCalibrationFile("../../../../depthai/resources/depthai.calib");
     //stereo->setInputResolution(1280, 720);
@@ -84,7 +83,6 @@ void StereoExampe::initDepthaiDev(){
 
     // CONNECT TO DEVICE
      _dev = std::make_unique<dai::Device>(_p);
-     _dev->startPipeline();
 
     _opImageStreams.push_back(_dev->getOutputQueue("left", 30, false));
     _opImageStreams.push_back(_dev->getOutputQueue("right", 30, false));
