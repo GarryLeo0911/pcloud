@@ -9,6 +9,11 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
 
+  <!-- DepthAI Dependencies -->
+  <depend>depthai</depend>
+  <depend>depthai_bridge</depend>
+  <depend>depthai_ros_msgs</depend>
+
   <depend>rclcpp</depend>
   <depend>rclcpp_components</depend>
   <depend>sensor_msgs</depend>

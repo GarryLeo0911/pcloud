@@ -13,9 +13,19 @@ find_package(image_transport REQUIRED)
 find_package(cv_bridge QUIET)
 find_package(OpenCV REQUIRED COMPONENTS imgproc highgui)
 find_package(depthai QUIET)
+find_package(depthai_bridge QUIET)
+find_package(depthai_ros_msgs QUIET)
 
 # Option to build without DepthAI (useful for CI or machines without the device)
 option(BUILD_WITHOUT_DEPTHAI "Build package without DepthAI support" OFF)
+
+if(NOT depthai_FOUND)
+	message(WARNING "DepthAI package not found. For OAK-D camera support, install:\n"
+				   "  sudo apt install ros-jazzy-depthai-ros\n"
+				   "  sudo apt install ros-jazzy-depthai-bridge\n"
+				   "  sudo apt install ros-jazzy-depthai-ros-msgs\n"
+				   "Or building with -DBUILD_WITHOUT_DEPTHAI=ON for testing")
+endif()
 
 # Global compile-time flags to let sources know whether DepthAI or cv_bridge are available
 if(depthai_FOUND AND NOT BUILD_WITHOUT_DEPTHAI)

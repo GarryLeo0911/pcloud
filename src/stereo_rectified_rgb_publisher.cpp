@@ -18,15 +18,45 @@ int main(int argc, char ** argv)
     auto node = rclcpp::Node::make_shared("stereo_rectified_rgb_node");
 
     // Declare parameters with defaults
+    // Camera identification
     node->declare_parameter("camera_name", "OAK-D");
     node->declare_parameter("camera_param_uri", "file://${ROS_HOME}/camera_info/${camera_name}.yaml");
+    
+    // OAK-D specific parameters
+    node->declare_parameter("fps", 30.0);
+    node->declare_parameter("color_width", 1280);
+    node->declare_parameter("color_height", 720);
+    node->declare_parameter("mono_width", 640);
+    node->declare_parameter("mono_height", 400);
+    node->declare_parameter("confidence_threshold", 200);
+    node->declare_parameter("enable_depth", true);
+    node->declare_parameter("enable_rectified", true);
+    node->declare_parameter("enable_lr_check", true);
+    node->declare_parameter("enable_subpixel", true);
+    node->declare_parameter("enable_extended_disparity", false);
     
     // Get parameters
     std::string deviceName = node->get_parameter("camera_name").as_string();
     std::string camera_param_uri = node->get_parameter("camera_param_uri").as_string();
     
+    // Get OAK-D configuration
+    double fps = node->get_parameter("fps").as_double();
+    int color_width = node->get_parameter("color_width").as_int();
+    int color_height = node->get_parameter("color_height").as_int();
+    int mono_width = node->get_parameter("mono_width").as_int();
+    int mono_height = node->get_parameter("mono_height").as_int();
+    int confidence = node->get_parameter("confidence_threshold").as_int();
+    bool enable_depth = node->get_parameter("enable_depth").as_bool();
+    bool enable_rectified = node->get_parameter("enable_rectified").as_bool();
+    bool enable_lr_check = node->get_parameter("enable_lr_check").as_bool();
+    bool enable_subpixel = node->get_parameter("enable_subpixel").as_bool();
+    bool enable_extended = node->get_parameter("enable_extended_disparity").as_bool();
+    
     RCLCPP_INFO(node->get_logger(), "Starting with camera_name: %s", deviceName.c_str());
     RCLCPP_INFO(node->get_logger(), "Camera params URI: %s", camera_param_uri.c_str());
+    RCLCPP_INFO(node->get_logger(), "Color resolution: %dx%d @ %0.1f FPS", color_width, color_height, fps);
+    RCLCPP_INFO(node->get_logger(), "Mono resolution: %dx%d", mono_width, mono_height);
+    RCLCPP_INFO(node->get_logger(), "Depth enabled: %s, Rectified: %s", enable_depth ? "yes" : "no", enable_rectified ? "yes" : "no");
 
     StereoExampe stero_pipeline;
     stero_pipeline.initDepthaiDev();
